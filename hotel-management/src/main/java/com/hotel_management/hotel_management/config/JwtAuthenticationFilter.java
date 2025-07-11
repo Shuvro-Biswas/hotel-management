@@ -21,8 +21,11 @@ import java.util.Collections;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired private JwtUtil jwtUtil;
-    @Autowired private UserRepository userRepository;
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -30,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // ✅ Skip filter for auth endpoints and OPTIONS pre-flight
+        // Skip filter for OPTIONS requests and /api/auth paths
         if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
@@ -47,19 +50,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             User user = userRepository.findByUsername(username).orElse(null);
-            if (user != null && jwtUtil.validateToken(token,
-                    new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), Collections.emptyList()))) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        user.getUsername(), null, Collections.emptyList());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+            if (user != null) {
+                UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                        user.getUsername(),
+                        user.getPassword(),
+                        Collections.emptyList()
+                );
+
+                if (jwtUtil.validateToken(token, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    System.out.println("JWT Authentication successful for user: " + user.getUsername());
+                } else {
+                    System.out.println("JWT validation failed for user: " + user.getUsername());
+                }
+            } else {
+                System.out.println("User not found for username: " + username);
             }
         }
 
         filterChain.doFilter(request, response);
     }
-
-
-
-
 }

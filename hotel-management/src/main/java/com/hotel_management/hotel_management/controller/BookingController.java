@@ -16,11 +16,18 @@ public class BookingController {
     @Autowired private BookingService bookingService;
 
     @PostMapping("/student")
-    public ResponseEntity<?> createBooking(@RequestParam Long userId, @RequestParam Long roomId) {
-        Booking booking = bookingService.createBooking(userId, roomId);
-        if (booking == null) return ResponseEntity.badRequest().body("Booking failed.");
-        return ResponseEntity.ok(booking);
+    public ResponseEntity<?> bookRoom(
+            @RequestParam Long userId,
+            @RequestParam Long roomId) {
+
+        try {
+            Booking booking = bookingService.createBooking(userId, roomId);
+            return ResponseEntity.ok(booking);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
+
 
     @GetMapping("/admin")
     public ResponseEntity<List<Booking>> getAllBookings() {

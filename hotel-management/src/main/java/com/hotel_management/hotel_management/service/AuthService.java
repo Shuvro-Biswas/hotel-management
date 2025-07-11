@@ -22,9 +22,22 @@ public class AuthService {
         return userRepository.save(user);
     }
 
+//    public User authenticate(LoginRequest request) {
+//        return userRepository.findByUsername(request.getUsername())
+//                .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
+//                .orElse(null);
+//    }
     public User authenticate(LoginRequest request) {
         return userRepository.findByUsername(request.getUsername())
-                .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
+                .filter(user -> {
+                    System.out.println("Login attempt for username: " + request.getUsername());
+                    System.out.println("Raw password input: " + request.getPassword());
+                    System.out.println("Hashed password in DB: " + user.getPassword());
+                    boolean matches = passwordEncoder.matches(request.getPassword(), user.getPassword());
+                    System.out.println("Password matches? " + matches);
+                    return matches;
+                })
                 .orElse(null);
     }
+
 }

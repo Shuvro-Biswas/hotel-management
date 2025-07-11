@@ -22,22 +22,33 @@ public class BookingService {
 
     public Booking createBooking(Long userId, Long roomId) {
         Optional<User> userOpt = userRepository.findById(userId);
-        Optional<Room> roomOpt = roomRepository.findById(roomId);
-        if (userOpt.isPresent() && roomOpt.isPresent()) {
-            Room room = roomOpt.get();
-            if (!room.isAvailable()) return null;
-            Booking booking = Booking.builder()
-                    .student(userOpt.get())
-                    .room(room)
-                    .bookingDate(LocalDate.now())
-                    .status("PENDING")
-                    .build();
-            room.setAvailable(false);
-            roomRepository.save(room);
-            return bookingRepository.save(booking);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User with userId=" + userId + " not found.");
         }
-        return null;
+
+        Optional<Room> roomOpt = roomRepository.findById(roomId);
+        if (roomOpt.isEmpty()) {
+            throw new IllegalArgumentException("Room with roomId=" + roomId + " not found.");
+        }
+
+        Room room = roomOpt.get();
+        if (!room.isAvailable()) {
+            throw new IllegalStateException("Room with roomId=" + roomId + " is not available.");
+        }
+
+        Booking booking = Booking.builder()
+                .student(userOpt.get())
+                .room(room)
+                .bookingDate(LocalDate.now())
+                .status("PENDING")
+                .build();
+
+        room.setAvailable(false);
+        roomRepository.save(room);
+        return bookingRepository.save(booking);
     }
+
+
 
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();

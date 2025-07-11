@@ -7,21 +7,29 @@ function BookingForm() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    axios.get('/rooms')
-      .then(res => setRooms(res.data.filter(r => r.available)))
-      .catch(console.error);
-  }, []);
+  axios.get('/rooms')
+    .then(res => {
+      console.log("Fetched rooms (raw):", res.data); // Log raw data
+      setRooms(res.data); // Remove filter temporarily
+    })
+    .catch(console.error);
+}, []);
+
 
   const handleBooking = async (e) => {
-    e.preventDefault();
-    const userId = 1; // TODO: decode JWT to get real user ID
-    try {
-      await axios.post(`/bookings/student?userId=${userId}&roomId=${selectedRoomId}`);
-      setMessage('Booking successful!');
-    } catch (err) {
-      setMessage('Booking failed.');
-    }
-  };
+  e.preventDefault();
+  const userId = 1; // TODO: decode JWT to get real user ID
+  console.log(`Booking roomId=${selectedRoomId} for userId=${userId}`);
+  try {
+    const res = await axios.post(`/bookings/student?userId=${userId}&roomId=${selectedRoomId}`);
+    console.log("Booking response:", res);
+    setMessage('Booking successful!');
+  } catch (err) {
+    console.error("Booking error:", err.response || err);
+    setMessage('Booking failed.');
+  }
+};
+
 
   return (
     <div className="container col-md-6 mt-4">
